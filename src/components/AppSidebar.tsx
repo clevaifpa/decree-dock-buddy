@@ -1,11 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  FileText,
-  FilePlus,
-  Bell,
-  Scale,
-} from "lucide-react";
+import { LayoutDashboard, FileText, FilePlus, Bell, Scale, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Tổng quan" },
@@ -16,6 +11,7 @@ const navItems = [
 
 const AppSidebar = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
@@ -24,27 +20,16 @@ const AppSidebar = () => {
           <Scale className="w-5 h-5 text-sidebar-primary" />
         </div>
         <div>
-          <h1 className="text-base font-heading font-bold text-sidebar-foreground tracking-tight">
-            LegalHub
-          </h1>
+          <h1 className="text-base font-heading font-bold text-sidebar-foreground tracking-tight">LegalHub</h1>
           <p className="text-xs text-sidebar-muted">Quản lý pháp chế</p>
         </div>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map(({ to, icon: Icon, label }) => {
-          const isActive =
-            to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
+          const isActive = to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
           return (
-            <Link
-              key={to}
-              to={to}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-primary"
-                  : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-              }`}
-            >
+            <Link key={to} to={to} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"}`}>
               <Icon className="w-4.5 h-4.5" />
               {label}
             </Link>
@@ -53,14 +38,19 @@ const AppSidebar = () => {
       </nav>
 
       <div className="px-4 py-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-semibold text-sidebar-primary">
-            PC
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-semibold text-sidebar-primary">
+              {user?.email?.[0]?.toUpperCase() || "U"}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.user_metadata?.full_name || user?.email}</p>
+              <p className="text-xs text-sidebar-muted truncate">{user?.email}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-sidebar-foreground">Phòng Pháp chế</p>
-            <p className="text-xs text-sidebar-muted">admin@company.vn</p>
-          </div>
+          <button onClick={signOut} className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-muted hover:text-sidebar-foreground transition-colors" title="Đăng xuất">
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </aside>
