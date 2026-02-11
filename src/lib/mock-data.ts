@@ -1,4 +1,4 @@
-export type ContractStatus = 'draft' | 'pending_review' | 'in_review' | 'approved' | 'rejected' | 'signed' | 'active' | 'expired';
+export type ContractStatus = 'draft' | 'pending_review' | 'in_review' | 'approved' | 'rejected' | 'signed' | 'active' | 'expired' | 'liquidated';
 export type ObligationType = 'payment' | 'delivery' | 'reporting' | 'renewal' | 'compliance' | 'other';
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 export type Department = 'sales' | 'marketing' | 'engineering' | 'finance' | 'hr' | 'operations';
@@ -48,6 +48,7 @@ export const statusLabels: Record<ContractStatus, string> = {
   signed: 'Đã ký',
   active: 'Đang hiệu lực',
   expired: 'Hết hạn',
+  liquidated: 'Đã thanh lý',
 };
 
 export const obligationTypeLabels: Record<ObligationType, string> = {

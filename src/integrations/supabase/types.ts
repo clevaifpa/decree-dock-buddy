@@ -14,7 +14,172 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      contract_files: {
+        Row: {
+          contract_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_type: string | null
+          id: string
+          is_liquidation: boolean | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_type?: string | null
+          id?: string
+          is_liquidation?: boolean | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_type?: string | null
+          id?: string
+          is_liquidation?: boolean | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_files_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contracts: {
+        Row: {
+          category: Database["public"]["Enums"]["contract_category"] | null
+          created_at: string
+          department: string
+          description: string | null
+          doc_link: string | null
+          end_date: string | null
+          id: string
+          partner: string
+          priority: Database["public"]["Enums"]["priority_level"]
+          requester: string
+          requester_user_id: string | null
+          review_deadline: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["contract_status"]
+          title: string
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["contract_category"] | null
+          created_at?: string
+          department: string
+          description?: string | null
+          doc_link?: string | null
+          end_date?: string | null
+          id?: string
+          partner: string
+          priority?: Database["public"]["Enums"]["priority_level"]
+          requester: string
+          requester_user_id?: string | null
+          review_deadline?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["contract_status"]
+          title: string
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["contract_category"] | null
+          created_at?: string
+          department?: string
+          description?: string | null
+          doc_link?: string | null
+          end_date?: string | null
+          id?: string
+          partner?: string
+          priority?: Database["public"]["Enums"]["priority_level"]
+          requester?: string
+          requester_user_id?: string | null
+          review_deadline?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["contract_status"]
+          title?: string
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
+      obligations: {
+        Row: {
+          amount: number | null
+          contract_id: string
+          created_at: string
+          description: string
+          due_date: string
+          id: string
+          status: Database["public"]["Enums"]["obligation_status"]
+          type: Database["public"]["Enums"]["obligation_type"]
+        }
+        Insert: {
+          amount?: number | null
+          contract_id: string
+          created_at?: string
+          description: string
+          due_date: string
+          id?: string
+          status?: Database["public"]["Enums"]["obligation_status"]
+          type?: Database["public"]["Enums"]["obligation_type"]
+        }
+        Update: {
+          amount?: number | null
+          contract_id?: string
+          created_at?: string
+          description?: string
+          due_date?: string
+          id?: string
+          status?: Database["public"]["Enums"]["obligation_status"]
+          type?: Database["public"]["Enums"]["obligation_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obligations_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          department: string | null
+          full_name: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          full_name?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          full_name?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +188,26 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      contract_category: "partner" | "office" | "service" | "hr" | "procurement"
+      contract_status:
+        | "draft"
+        | "pending_review"
+        | "in_review"
+        | "approved"
+        | "rejected"
+        | "signed"
+        | "active"
+        | "expired"
+        | "liquidated"
+      obligation_status: "pending" | "completed" | "overdue"
+      obligation_type:
+        | "payment"
+        | "delivery"
+        | "reporting"
+        | "renewal"
+        | "compliance"
+        | "other"
+      priority_level: "low" | "medium" | "high" | "urgent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +334,29 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      contract_category: ["partner", "office", "service", "hr", "procurement"],
+      contract_status: [
+        "draft",
+        "pending_review",
+        "in_review",
+        "approved",
+        "rejected",
+        "signed",
+        "active",
+        "expired",
+        "liquidated",
+      ],
+      obligation_status: ["pending", "completed", "overdue"],
+      obligation_type: [
+        "payment",
+        "delivery",
+        "reporting",
+        "renewal",
+        "compliance",
+        "other",
+      ],
+      priority_level: ["low", "medium", "high", "urgent"],
+    },
   },
 } as const

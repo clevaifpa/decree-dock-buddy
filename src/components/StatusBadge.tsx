@@ -9,6 +9,7 @@ const statusStyles: Record<ContractStatus, string> = {
   signed: "bg-primary/15 text-primary",
   active: "bg-success/15 text-success",
   expired: "bg-muted text-muted-foreground",
+  liquidated: "bg-secondary text-secondary-foreground",
 };
 
 const StatusBadge = ({ status }: { status: ContractStatus }) => (
