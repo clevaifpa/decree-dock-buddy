@@ -12,6 +12,7 @@ export interface Contract {
   status: string;
   priority: string;
   category: string | null;
+  category_id: string | null;
   value: number | null;
   description: string | null;
   doc_link: string | null;
@@ -20,6 +21,14 @@ export interface Contract {
   end_date: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ContractCategory {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  created_at: string;
 }
 
 export interface Obligation {
@@ -32,6 +41,7 @@ export interface Obligation {
   amount: number | null;
   created_at: string;
   contract?: Contract;
+  contractTitle?: string;
 }
 
 export interface ContractFile {
@@ -45,6 +55,18 @@ export interface ContractFile {
   created_at: string;
 }
 
+export interface StatusHistoryEntry {
+  id: string;
+  contract_id: string;
+  old_status: string | null;
+  new_status: string;
+  changed_by: string | null;
+  changed_by_name: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+// ─── Contracts ───
 export const useContracts = () => {
   return useQuery({
     queryKey: ["contracts"],
@@ -59,36 +81,19 @@ export const useContracts = () => {
   });
 };
 
-export const useObligations = () => {
+export const useContract = (id?: string) => {
   return useQuery({
-    queryKey: ["obligations"],
+    queryKey: ["contract", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("obligations")
-        .select("*, contracts(title)")
-        .order("due_date", { ascending: true });
-      if (error) throw error;
-      return (data as any[]).map((o) => ({
-        ...o,
-        contractTitle: o.contracts?.title || "",
-      }));
-    },
-  });
-};
-
-export const useContractFiles = (contractId?: string) => {
-  return useQuery({
-    queryKey: ["contract-files", contractId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contract_files")
+        .from("contracts")
         .select("*")
-        .eq("contract_id", contractId!)
-        .order("created_at", { ascending: false });
+        .eq("id", id!)
+        .single();
       if (error) throw error;
-      return data as ContractFile[];
+      return data as Contract;
     },
-    enabled: !!contractId,
+    enabled: !!id,
   });
 };
 
@@ -117,7 +122,73 @@ export const useUpdateContract = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["contracts"] });
+      qc.invalidateQueries({ queryKey: ["contract"] });
+      toast.success("Cập nhật hợp đồng thành công!");
     },
+  });
+};
+
+export const useDeleteContract = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("contracts").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["contracts"] });
+      toast.success("Đã xóa hợp đồng!");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+};
+
+// ─── Obligations ───
+export const useObligations = () => {
+  return useQuery({
+    queryKey: ["obligations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("obligations")
+        .select("*, contracts(title)")
+        .order("due_date", { ascending: true });
+      if (error) throw error;
+      return (data as any[]).map((o) => ({
+        ...o,
+        contractTitle: o.contracts?.title || "",
+      }));
+    },
+  });
+};
+
+export const useContractObligations = (contractId?: string) => {
+  return useQuery({
+    queryKey: ["obligations", contractId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("obligations")
+        .select("*")
+        .eq("contract_id", contractId!)
+        .order("due_date", { ascending: true });
+      if (error) throw error;
+      return data as Obligation[];
+    },
+    enabled: !!contractId,
+  });
+};
+
+export const useCreateObligation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (obligation: Partial<Obligation>) => {
+      const { error } = await supabase.from("obligations").insert(obligation as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["obligations"] });
+      toast.success("Thêm nghĩa vụ thành công!");
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 };
 
@@ -132,6 +203,38 @@ export const useUpdateObligation = () => {
       qc.invalidateQueries({ queryKey: ["obligations"] });
       toast.success("Cập nhật trạng thái thành công!");
     },
+  });
+};
+
+export const useDeleteObligation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("obligations").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["obligations"] });
+      toast.success("Đã xóa nghĩa vụ!");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+};
+
+// ─── Contract Files ───
+export const useContractFiles = (contractId?: string) => {
+  return useQuery({
+    queryKey: ["contract-files", contractId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contract_files")
+        .select("*")
+        .eq("contract_id", contractId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as ContractFile[];
+    },
+    enabled: !!contractId,
   });
 };
 
@@ -164,17 +267,83 @@ export const useUploadContractFile = () => {
   });
 };
 
-export const useCreateObligation = () => {
+export const useDeleteContractFile = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (obligation: Partial<Obligation>) => {
-      const { error } = await supabase.from("obligations").insert(obligation as any);
+    mutationFn: async ({ id, filePath }: { id: string; filePath: string }) => {
+      await supabase.storage.from("contract-files").remove([filePath]);
+      const { error } = await supabase.from("contract_files").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["obligations"] });
-      toast.success("Thêm nghĩa vụ thành công!");
+      qc.invalidateQueries({ queryKey: ["contract-files"] });
+      toast.success("Đã xóa file!");
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+};
+
+// ─── Categories ───
+export const useContractCategories = () => {
+  return useQuery({
+    queryKey: ["contract-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contract_categories" as any)
+        .select("*")
+        .order("name");
+      if (error) throw error;
+      return data as unknown as ContractCategory[];
+    },
+  });
+};
+
+export const useCreateCategory = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ name, slug, icon }: { name: string; slug: string; icon: string }) => {
+      const { data: user } = await supabase.auth.getUser();
+      const { error } = await supabase.from("contract_categories" as any).insert({
+        name, slug, icon, created_by: user.user?.id,
+      } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["contract-categories"] });
+      toast.success("Tạo danh mục thành công!");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+};
+
+export const useDeleteCategory = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("contract_categories" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["contract-categories"] });
+      toast.success("Đã xóa danh mục!");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+};
+
+// ─── Status History ───
+export const useContractStatusHistory = (contractId?: string) => {
+  return useQuery({
+    queryKey: ["contract-status-history", contractId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contract_status_history" as any)
+        .select("*")
+        .eq("contract_id", contractId!)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as unknown as StatusHistoryEntry[];
+    },
+    enabled: !!contractId,
   });
 };

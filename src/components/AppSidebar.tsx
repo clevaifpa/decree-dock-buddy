@@ -1,17 +1,19 @@
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, FileText, FilePlus, Bell, Scale, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-
-const navItems = [
-  { to: "/", icon: LayoutDashboard, label: "Tổng quan" },
-  { to: "/contracts", icon: FileText, label: "Hợp đồng" },
-  { to: "/contracts/new", icon: FilePlus, label: "Tạo yêu cầu" },
-  { to: "/obligations", icon: Bell, label: "Nghĩa vụ" },
-];
+import { useIsAdmin } from "@/hooks/useUserRole";
 
 const AppSidebar = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const isAdmin = useIsAdmin();
+
+  const navItems = [
+    { to: "/", icon: LayoutDashboard, label: "Tổng quan" },
+    { to: "/contracts", icon: FileText, label: "Hợp đồng" },
+    { to: "/contracts/new", icon: FilePlus, label: "Upload / Tạo yêu cầu" },
+    { to: "/obligations", icon: Bell, label: "Nghĩa vụ" },
+  ];
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
@@ -44,7 +46,10 @@ const AppSidebar = () => {
               {user?.email?.[0]?.toUpperCase() || "U"}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.user_metadata?.full_name || user?.email}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.user_metadata?.full_name || user?.email}</p>
+                {isAdmin && <span className="text-[10px] px-1.5 py-0.5 rounded bg-sidebar-primary/20 text-sidebar-primary font-medium">Admin</span>}
+              </div>
               <p className="text-xs text-sidebar-muted truncate">{user?.email}</p>
             </div>
           </div>

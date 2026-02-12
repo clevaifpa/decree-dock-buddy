@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AppLayout from "./components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import ContractList from "./pages/ContractList";
+import ContractDetail from "./pages/ContractDetail";
 import NewContractRequest from "./pages/NewContractRequest";
 import Obligations from "./pages/Obligations";
 import Auth from "./pages/Auth";
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/" element={<Dashboard />} />
               <Route path="/contracts" element={<ContractList />} />
               <Route path="/contracts/new" element={<NewContractRequest />} />
+              <Route path="/contracts/:id" element={<ContractDetail />} />
               <Route path="/obligations" element={<Obligations />} />
             </Route>
             <Route path="*" element={<NotFound />} />
