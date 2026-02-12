@@ -1,20 +1,28 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Filter, Plus } from "lucide-react";
+import { Search, Filter, Plus, Trash2 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import PriorityBadge from "@/components/PriorityBadge";
-import { useContracts } from "@/hooks/useContracts";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useContracts, useDeleteContract, useContractCategories } from "@/hooks/useContracts";
+import { useIsAdmin } from "@/hooks/useUserRole";
 import { departments, statusLabels, ContractStatus } from "@/lib/mock-data";
 
 const ContractList = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ContractStatus | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const { data: contracts = [], isLoading } = useContracts();
+  const { data: categories = [] } = useContractCategories();
+  const deleteContract = useDeleteContract();
+  const isAdmin = useIsAdmin();
+  const [deleteId, setDeleteId] = useState<{ id: string; name: string } | null>(null);
 
   const filtered = contracts.filter((c) => {
     const matchSearch = c.title.toLowerCase().includes(search.toLowerCase()) || c.partner.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || c.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchCategory = categoryFilter === "all" || c.category_id === categoryFilter;
+    return matchSearch && matchStatus && matchCategory;
   });
 
   const formatCurrency = (amount: number) =>
@@ -46,6 +54,10 @@ const ContractList = () => {
             {Object.entries(statusLabels).map(([k, v]) => (<option key={k} value={k}>{v}</option>))}
           </select>
         </div>
+        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-3 py-2.5 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring appearance-none cursor-pointer">
+          <option value="all">Tất cả danh mục</option>
+          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
       </div>
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -55,35 +67,56 @@ const ContractList = () => {
               <tr className="border-b border-border bg-muted/50">
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Hợp đồng</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Đối tác</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Bộ phận</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Danh mục</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Giá trị</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Ưu tiên</th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground">Trạng thái</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Ngày tạo</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Hết hạn</th>
+                {isAdmin && <th className="text-left px-4 py-3 font-medium text-muted-foreground w-10"></th>}
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c) => (
-                <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-foreground">{c.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Yêu cầu bởi {c.requester}</p>
-                  </td>
-                  <td className="px-4 py-3 text-foreground">{c.partner}</td>
-                  <td className="px-4 py-3 text-foreground">{(departments as any)[c.department] || c.department}</td>
-                  <td className="px-4 py-3 text-foreground">{c.value ? formatCurrency(c.value) : "—"}</td>
-                  <td className="px-4 py-3"><PriorityBadge priority={c.priority as any} /></td>
-                  <td className="px-4 py-3"><StatusBadge status={c.status as any} /></td>
-                  <td className="px-4 py-3 text-muted-foreground">{new Date(c.created_at).toLocaleDateString("vi-VN")}</td>
-                </tr>
-              ))}
+              {filtered.map((c) => {
+                const cat = categories.find((cat) => cat.id === c.category_id);
+                return (
+                  <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3">
+                      <Link to={`/contracts/${c.id}`} className="hover:text-primary">
+                        <p className="font-medium text-foreground">{c.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Yêu cầu bởi {c.requester}</p>
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-foreground">{c.partner}</td>
+                    <td className="px-4 py-3 text-foreground text-xs">{cat ? `${cat.icon} ${cat.name}` : "—"}</td>
+                    <td className="px-4 py-3 text-foreground">{c.value ? formatCurrency(c.value) : "—"}</td>
+                    <td className="px-4 py-3"><PriorityBadge priority={c.priority as any} /></td>
+                    <td className="px-4 py-3"><StatusBadge status={c.status as any} /></td>
+                    <td className="px-4 py-3 text-muted-foreground">{c.end_date ? new Date(c.end_date).toLocaleDateString("vi-VN") : "—"}</td>
+                    {isAdmin && (
+                      <td className="px-4 py-3">
+                        <button onClick={() => setDeleteId({ id: c.id, name: c.title })} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Không tìm thấy hợp đồng nào</td></tr>
+                <tr><td colSpan={isAdmin ? 8 : 7} className="px-4 py-8 text-center text-muted-foreground">Không tìm thấy hợp đồng nào</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={() => setDeleteId(null)}
+        title="Xóa hợp đồng"
+        description={`Bạn có chắc chắn muốn xóa "${deleteId?.name}"? Tất cả tài liệu và nghĩa vụ liên quan sẽ bị xóa.`}
+        onConfirm={() => { if (deleteId) deleteContract.mutate(deleteId.id); setDeleteId(null); }}
+      />
     </div>
   );
 };

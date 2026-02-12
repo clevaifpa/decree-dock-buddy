@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      contract_categories: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          icon: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       contract_files: {
         Row: {
           contract_id: string
@@ -55,9 +82,51 @@ export type Database = {
           },
         ]
       }
+      contract_status_history: {
+        Row: {
+          changed_by: string | null
+          changed_by_name: string | null
+          contract_id: string
+          created_at: string
+          id: string
+          new_status: string
+          note: string | null
+          old_status: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          contract_id: string
+          created_at?: string
+          id?: string
+          new_status: string
+          note?: string | null
+          old_status?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          contract_id?: string
+          created_at?: string
+          id?: string
+          new_status?: string
+          note?: string | null
+          old_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_status_history_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           category: Database["public"]["Enums"]["contract_category"] | null
+          category_id: string | null
           created_at: string
           department: string
           description: string | null
@@ -77,6 +146,7 @@ export type Database = {
         }
         Insert: {
           category?: Database["public"]["Enums"]["contract_category"] | null
+          category_id?: string | null
           created_at?: string
           department: string
           description?: string | null
@@ -96,6 +166,7 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["contract_category"] | null
+          category_id?: string | null
           created_at?: string
           department?: string
           description?: string | null
@@ -113,7 +184,15 @@ export type Database = {
           updated_at?: string
           value?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contracts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "contract_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       obligations: {
         Row: {
@@ -180,14 +259,40 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      ensure_user_role: { Args: never; Returns: undefined }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "user"
       contract_category: "partner" | "office" | "service" | "hr" | "procurement"
       contract_status:
         | "draft"
@@ -335,6 +440,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       contract_category: ["partner", "office", "service", "hr", "procurement"],
       contract_status: [
         "draft",
